@@ -3,4 +3,6 @@
 /client/node_modules
 
 workspace.code-workspace
-
+*.code-workspace
+*.env
+.env
