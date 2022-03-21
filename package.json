@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --ignore client/ --exec babel-node server.js"
+    "start": "nodemon --ignore client/ --exec babel-node server.js",
+    "heroku-postbuild": "cd client && npm install --only=dev && npm install && npm run build"
   },
   "repository": {
     "type": "git",
@@ -35,5 +36,8 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "stripe": "^8.210.0"
+  },
+  "engines": {
+    "node": "16.14.0"
   }
 }
