@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser')
 const passport = require('passport')
 const userRouter = require('./routes/user')
 const stripeRouter = require('./routes/stripe')
+const path = require('path')
 
 const PORT = process.env.PORT || 4001
 const app = express()
