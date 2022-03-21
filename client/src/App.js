@@ -4,7 +4,7 @@ import LocalizationProvider from '@mui/lab/LocalizationProvider'
 import axios from 'axios'
 import AdapterDateFns from '@mui/lab/AdapterDateFns'
 import { AppContext } from './universal/AppContext'
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Theme } from './universal/CustomTheme'
 import LandingRouter from './landing'
 import SigninRouter from './landing/signin'
@@ -14,13 +14,17 @@ export default function App(props) {
   const [userToken, setUserToken] = useState(localStorage.getItem('userToken') || '')
   const [user, setUser] = useState()
   const tokenSource = axios.CancelToken.source()
+  const location = useLocation()
   const navigate = useNavigate()
 
   useEffect(()=>{
+    const curLocation = location.pathname
     const source = axios.CancelToken.source()
     axios.get('/user/get_user', {headers: {Authorization: `JWT ${userToken}`}, cancelToken: source.token})
     .then(res=>{
       setUser(res.data.user)
+      setTimeout(()=>navigate(curLocation), 100)
+      console.log(curLocation)
     })
     .catch(err=>{})
     return () => source.cancel()

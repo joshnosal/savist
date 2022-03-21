@@ -6,7 +6,9 @@ const async = require('async')
 
 const userSchema = new mongoose.Schema({
   email: String,
-  stripe_id: String,
+  stripe_customer_id: String,
+  stripe_account_id: {type: String, select: false},
+  stripe_account_setup: {type: Boolean, default: false},
   password: {type: String, select: false},
   validated: {type: Boolean, default: false},
 }, {timestamps: true})

@@ -22,42 +22,54 @@ passport.use('check', new JWTstrategy({
 passport.use('signup', new localStrategy({
   passReqToCallback: true,
   usernameField: 'email'
-}, (req, em, pass, done) => {
+}, (req, em, pass, next) => {
   let email = req.body.email.toLowerCase(),
       password = req.body.password
 
-  User.find({email: email}, (err, users)=>{
-    
-    if(err) {
-      // console.log('Line 30: ',err)
-      done("We're sorry, something went wrong. Please try again.")
-    } else if (users.length) {
-      done("This email is already taken.")
-    } else {
+  async.waterfall([
+    (done) => {
+      User.find({email: email}, (err, users) => {
+        if (err) {
+          done (err)
+        } else if (users.length) {
+          done("This email is already taken.")
+        } else {
+          done(null)
+        }
+      })
+    },
+    (done) => {
       stripe.customers.create({email: email})
-        .then(customer => {
-          let user = new User({
-            email: email,
-            password: password,
-            validated: true,
-            stripe_id: customer.id
-          })
-          user.save((err, doc)=>done(err, doc))
-        })
-        .catch(e => done("We're sorry, something went wrong. Please try again."))
-
-      // let user = new User({
-      //   email: email,
-      //   password: password,
-      //   validated: true
-      // })
-      // user.save((err, doc)=>{
-      //   console.log('Err: ', err)
-      //   console.log('Doc: ', doc)
-      // })
+        .then(customer => done(null, customer))
+        .catch(err => done (err))
+    },
+    (customer, done) => {
+      stripe.accounts.create({
+        type: 'custom',
+        business_type: 'individual',
+        email: email,
+        individual: {email: email},
+        capabilities: {
+          transfers: {requested: true}
+        }
+      })
+        .then(account => done(null, customer, account))
+        .catch(err => done (err))
+    },
+    (customer, account, done) => {
+      let user = new User({
+        email: email,
+        password: password,
+        validated: true,
+        stripe_customer_id: customer.id,
+        stripe_account_id: account.id
+      })
+      user.save((err, doc) => done(err, doc))
     }
+  ], (error, result) => {
+    console.log(error)
+    error ? next("We're sorry, something went wrong. Please try again.") : next(error, result)
   })
-  
 }))
 
 passport.use('signin', new localStrategy({

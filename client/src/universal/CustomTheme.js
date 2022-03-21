@@ -20,6 +20,7 @@ export const Theme = createTheme({
     palette: {
       primary: {main: cyan[600], light: cyan[300], dark: cyan[900]},
       secondary: {main: deepOrange[800], light: deepOrange.A200, dark: deepOrange[600]},
+      warning: {main: yellow[500], light: yellow[300], dark: yellow[600]},
       background: {default: 'white', dark: grey[900]},
       grey: grey
     },
@@ -43,6 +44,17 @@ export const Theme = createTheme({
             style: {
               color: 'white',
               '&.Mui-checked svg': { color: 'white', fill: 'white' }
+            }
+          }
+        ]
+      },
+      MuiButton: {
+        variants: [
+          {
+            props: {variant: 'contained', disabled: true},
+            style: {
+              backgroundColor: grey[800]+' !important',
+              color: grey[900]+' !important'
             }
           }
         ]

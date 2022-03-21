@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react'
 import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, useTheme } from '@mui/material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AppContext } from '../universal/AppContext'
+import { Routes, Route } from 'react-router-dom'
 import AccountIcon from '@mui/icons-material/AccountCircle'
 import MenuIcon from '@mui/icons-material/Menu'
 import MoneyIcon from '@mui/icons-material/AttachMoney'
@@ -9,6 +10,9 @@ import BankIcon from '@mui/icons-material/AccountBalance'
 import BalanceIcon from '@mui/icons-material/AccountBalanceWallet'
 import HistoryIcon from '@mui/icons-material/Timeline'
 import LogoutIcon from '@mui/icons-material/Logout'
+
+import DashLanding from './landing'
+import AccountPage from './account'
 
 
 const drawerWidth = 220
@@ -56,7 +60,7 @@ export default function AppRouter(props){
     {path: 'check_balance', title: 'Check Balance', icon: <BalanceIcon/>}
   ]
   const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState('My Account')
+  const [title, setTitle] = useState('Welcome to Savist!')
   const theme = useTheme()
   const location = useLocation()
   const navigate = useNavigate()
@@ -129,7 +133,26 @@ export default function AppRouter(props){
           </ListItem>
         </List>
       </Drawer>
-      <Box sx={{color:'white'}}>{title}</Box>
+      <Box sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        flexGrow: 1,
+        padding: '0 20px'
+      }}>
+        <Box sx={{
+          padding: '20px 0'
+        }}>
+          <Box sx={{
+            color: 'primary.main',
+            fontWeight: '600',
+            fontSize: '24px',
+          }}>{title}</Box>
+        </Box>
+        <Routes>
+          {/* <Route index element={<DashLanding/>}/> */}
+          <Route path="/my_account" element={<AccountPage/>}/>
+        </Routes>
+      </Box>
     </Box>
   )
 }
