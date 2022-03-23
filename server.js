@@ -30,13 +30,14 @@ if (process.env.NODE_ENV === "production") {
   })
 }
 
-mongoose.connect(process.env.DATABASE_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+const dbURL = process.env.NODE_ENV !== 'production' ? process.env.TEST_DATABASE_URL : process.env.DATABASE_URL
+mongoose.connect(dbURL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+let db = mongoose.connection
+db.on('connected', ()=>{
+  app.listen(PORT, ()=>{
+    console.log(`Server listening at port ${PORT}.`)
   })
-  let db = mongoose.connection
-  db.on('connected', ()=>{
-    app.listen(PORT, ()=>{
-      console.log(`Server listening at port ${PORT}.`)
-    })
-  })
+})

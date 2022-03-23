@@ -36,6 +36,7 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
+    "plaid": "^10.1.0",
     "stripe": "^8.210.0"
   },
   "engines": {

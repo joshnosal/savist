@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react'
 import { Box, useTheme, Button, CircularProgress } from '@mui/material'
 import axios from 'axios'
 import { AppContext } from '../../universal/AppContext'
+import PlaidAcctBtn from './button_plaid_acct'
 
 export default function AccountPage(props){
   const theme = useTheme()
@@ -9,12 +10,11 @@ export default function AccountPage(props){
   const [authAccount, setAuthAccount] = useState(false)
   const source = axios.CancelToken.source()
   const { user, userToken } = useContext(AppContext)
-  const [newAcctPopup, setNewAcctPopup] = useState(false)
 
   // Check if user's account has been fully validated
   useEffect(() => checkStripeAccountStatus(), [])
   const checkStripeAccountStatus = () => {
-    axios.get('/stripe/check_account_status', {headers: {Authorization: `JWT ${userToken}`}, cancelToken: source.token})
+    axios.get('/stripe/check_charges_enabled', {headers: {Authorization: `JWT ${userToken}`}, cancelToken: source.token})
     .then(res => {
       setAuthAccount(true)
       setLoading(false)
@@ -57,12 +57,13 @@ export default function AccountPage(props){
       <Box sx={{margin: '20px 0'}}>
         <Button
           variant='contained'
-          color={authAccount == 1 ? 'primary' : 'secondary'}
+          color='primary'
           onClick={authAccount ? openStripeOnboardLink : openStripeUpdateLink}
           disabled={authAccount == 1 ? true : false}
           size='small'
+          sx={{minWidth: '140px'}}
         >
-          {loading ? <CircularProgress sx={{color: 'primary.main'}} size={24}/> 
+          {loading ? <CircularProgress sx={{color: theme.palette.background.dark}} size={24}/> 
             : authAccount  ? 'Update' 
             : 'Account Setup'}
         </Button>
@@ -73,14 +74,9 @@ export default function AccountPage(props){
         fontSize: '14px',
       }}>Deposit Accounts</Box>
       <Box sx={{margin: '20px 0'}}>
-        <Button
-          variant='contained'
-          size='small'
-          color='secondary'
-          onClick={() => setNewAcctPopup(!newAcctPopup)}
-        >
-          New Account
-        </Button>
+        <PlaidAcctBtn
+          text={'Add Account'}
+        />
       </Box>
       
     </Box>

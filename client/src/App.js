@@ -46,12 +46,11 @@ export default function App(props) {
     signIn: (vals, cb) => {
       axios.post('/user/signin', {email: vals.email, password: vals.password, remember: vals.remember}, {cancelToken: tokenSource.token})
         .then(res => {
-          console.log(res)
           if(!res.data.err) {
             setUser(res.data.obj.user)
             setUserToken(res.data.msg)
           }
-          // cb(res.data)
+          cb(res.data)
         })
         .catch(err => cb({err: true, msg: "We're sorry, something went wrong. Please try again."}))
       return () => tokenSource.cancel()

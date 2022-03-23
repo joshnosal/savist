@@ -56,6 +56,16 @@ export const Theme = createTheme({
               backgroundColor: grey[800]+' !important',
               color: grey[900]+' !important'
             }
+          },
+          {
+            props: {variant: 'contained', color: 'primary'},
+            style:{
+              color: grey[900],
+              fontWeight: '600',
+              '&:hover' : {
+                backgroundColor: deepOrange[600]
+              }
+            }
           }
         ]
       }
