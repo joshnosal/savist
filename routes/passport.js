@@ -61,13 +61,14 @@ passport.use('signup', new localStrategy({
         email: email,
         password: password,
         validated: true,
-        stripe_customer_id: customer.id,
-        stripe_account_id: account.id
+        stripe: {
+          customer_id: customer.id,
+          account_id: account.id
+        }
       })
       user.save((err, doc) => done(err, doc))
     }
   ], (error, result) => {
-    console.log(error)
     error ? next("We're sorry, something went wrong. Please try again.") : next(error, result)
   })
 }))

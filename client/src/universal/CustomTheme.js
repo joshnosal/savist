@@ -18,11 +18,17 @@ const grey = {
 export const Theme = createTheme({
     
     palette: {
+      mode: 'dark',
       primary: {main: cyan[600], light: cyan[300], dark: cyan[900]},
       secondary: {main: deepOrange[800], light: deepOrange.A200, dark: deepOrange[600]},
       warning: {main: yellow[500], light: yellow[300], dark: yellow[600]},
-      background: {default: 'white', dark: grey[900]},
+      background: {contrast: 'rgb(255,255,255)', default: 'rgb(0,0,0)'},
       grey: grey
+    },
+    typography: {
+      fontFamily: "'Dosis', sans-serif",
+      fontWeightRegular: 300,
+      fontSize: 14
     },
 
     components: {
@@ -51,20 +57,9 @@ export const Theme = createTheme({
       MuiButton: {
         variants: [
           {
-            props: {variant: 'contained', disabled: true},
+            props: { variant: 'contained', size: 'small' },
             style: {
-              backgroundColor: grey[800]+' !important',
-              color: grey[900]+' !important'
-            }
-          },
-          {
-            props: {variant: 'contained', color: 'primary'},
-            style:{
-              color: grey[900],
-              fontWeight: '600',
-              '&:hover' : {
-                backgroundColor: deepOrange[600]
-              }
+              borderRadius: '15px'
             }
           }
         ]

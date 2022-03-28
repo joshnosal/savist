@@ -30,10 +30,7 @@ export default function SignInDialog(props){
       if (res.err) {
         setError(res.msg)
         setValues(empty)
-      } else {
-        console.log('here')
-        // navigate('../dash', {replace: true})
-      }
+      } 
     })
   }
 

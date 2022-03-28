@@ -1,157 +1,144 @@
-import React, { useState, useContext } from 'react'
-import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, useTheme } from '@mui/material'
+import { useState, useContext, createElement, useEffect } from 'react'
+import { Box, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, useTheme, Button, Icon } from '@mui/material'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { AppContext } from '../universal/AppContext'
 import { Routes, Route } from 'react-router-dom'
-import AccountIcon from '@mui/icons-material/AccountCircle'
+import AccountIcon from '@mui/icons-material/PersonOutlineOutlined'
 import MenuIcon from '@mui/icons-material/Menu'
 import MoneyIcon from '@mui/icons-material/AttachMoney'
-import BankIcon from '@mui/icons-material/AccountBalance'
-import BalanceIcon from '@mui/icons-material/AccountBalanceWallet'
+import BankIcon from '@mui/icons-material/AccountBalanceOutlined'
+import BalanceIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
 import HistoryIcon from '@mui/icons-material/Timeline'
 import LogoutIcon from '@mui/icons-material/Logout'
+import AddCardIcon from '@mui/icons-material/AddCardOutlined'
 
 import DashLanding from './landing'
 import AccountPage from './account'
-
-
-const drawerWidth = 220
-
-const openedMixin = (theme) => ({
-  width: drawerWidth,
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.enteringScreen,
-  }),
-  overflowX: 'hidden',
-})
-
-const closedMixin = (theme) => ({
-  transition: theme.transitions.create('width', {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  overflowX: 'hidden',
-  width: `calc(${theme.spacing(2)} + 1px)`,
-  [theme.breakpoints.up('sm')]: {
-    width: `calc(${theme.spacing(7)} + 1px)`,
-  },
-})
-
-const activeMixin = (theme) => ({
-  backgroundColor: 'rgba(255,255,255,0.1)',
-  color: theme.palette.secondary.main,
-  '& .MuiTypography-root': {fontWeight: '500'},
-  '&:hover': { 
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  }
-})
-
-const inactiveMixin = (theme) => ({
-  color: theme.palette.secondary.main
-})
+import DepositPage from './deposit/index'
+import NewCardPage from './new_card'
 
 export default function AppRouter(props){
+  const theme = useTheme()
+  const sx = {
+    menuRow: {
+      display: 'flex',
+      marginTop: '20px',
+      cursor: 'pointer',
+      '&:hover .inner-row': {
+        backgroundColor: 'rgba(255,255,255,0.1)'
+      },
+    },
+    menuInnerRow: {
+      padding: '5px 15px 5px 10px',
+      display: 'flex',
+      alignItems: 'center',
+      borderRadius: '20px',
+    },
+    activeInnerRow: {
+      backgroundColor: 'rgba(255,255,255,0.1)'
+    },
+    menuIcon: {
+      color: 'white',
+      width: 32,
+      height: 32,
+    },
+    menuText: {
+      marginLeft: '10px',
+      fontSize: '18px',
+      color: theme.palette.text.main
+    }
+  }
+
   let pages = [
-    {path: 'my_account', title: 'My Account', icon: <AccountIcon/>},
-    {path: 'history', title: 'History', icon: <HistoryIcon/>},
-    {path: 'bank_acounts', title: 'Bank Accounts', icon: <BankIcon/>},
-    {path: 'new_transfer', title: 'New Transfer', icon: <MoneyIcon/>},
-    {path: 'check_balance', title: 'Check Balance', icon: <BalanceIcon/>}
+    // {path: 'deposit', title: 'New Deposit', icon: <BalanceIcon sx={sx.menuIcon}/>},
+    {path: 'new_card', title: 'New Card', icon: <AddCardIcon sx={sx.menuIcon}/>},
+    {path: 'my_account', title: 'My Account', icon: <AccountIcon sx={sx.menuIcon}/>},
+    {path: 'history', title: 'History', icon: <HistoryIcon sx={sx.menuIcon}/>},
+    {path: 'bank_acounts', title: 'Bank Accounts', icon: <BankIcon sx={sx.menuIcon}/>},
   ]
   const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState('Welcome to Savist!')
-  const theme = useTheme()
+  const [title, setTitle] = useState()
+  
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut } = useContext(AppContext)
 
-  const toggleDrawer = () => setOpen(!open)
-
+  useEffect(()=>{
+    let path = location.pathname
+    if (path.includes('/deposit')) return setTitle('New Deposit')
+    for (let i=0; i<pages.length; i++) {
+      if (path.includes(pages[i].path)) {
+        setTitle(pages[i].title)
+        return
+      }
+    }
+    setTitle('Welcome to Savist!')
+  },[location, setTitle])
 
 
   return (
-    <Box sx={{
-      backgroundColor: 'background.dark',
-      height: '100vh',
-      width: '100vw',
-      display: 'flex',
-      flexDirection: 'row',
-    }}>
-      <Drawer
-        variant='permanent'
-        open={open}
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          whiteSpace: 'nowrap',
-          boxSizing: 'border-box',
-          '& > .MuiDrawer-paper': { 
-            background: theme.palette.background.dark, 
-            display: 'flex',
-            borderRight: '1px solid '+theme.palette.primary.main
-          },
-          ...(open && {
-            ...openedMixin(theme),
-            '& .MuiDrawer-paper': openedMixin(theme),
-          }),
-          ...(!open && {
-            ...closedMixin(theme),
-            '& .MuiDrawer-paper': closedMixin(theme),
-          })
-        }}
-      >
-        <List disablePadding sx={{display: 'flex', flexDirection: 'column', heightL: '100%', flexGrow: 1}}>
-          <ListItem>
-            <ListItemIcon sx={{color: 'primary.main', cursor: 'pointer'}} onClick={toggleDrawer}>
-              <MenuIcon/>
-            </ListItemIcon>
-          </ListItem>
-          <Divider/>
+    <Box sx={{ display: 'flex', flex: 'column', backgroundColor: 'background.dark', height: '100vh', width: '100vw', justifyContent: 'center' }}>
+      <Box sx={{ flexGrow: '1', maxWidth: '1000px', display: 'flex', flexDirection: 'row' }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          padding: '40px 0px', 
+          minWidth: '250px',
+          borderRight: '1px solid '+theme.palette.grey[800]
+        }}>
+          <Button
+            variant='contained'
+            color='secondary'
+            sx={{
+              borderRadius: '20px',
+              fontSize: '18px',
+              marginRight: '20px'
+            }}
+            onClick={() => {
+              navigate('deposit', { replace: true })
+              setTitle('New Deposit')
+            }}
+          >Deposit</Button>
           {pages.map((page, idx) => (
-            <ListItem 
-              button 
-              disableRipple
-              key={idx}
-              onClick={() => {
-                navigate(''+page.path, {replace: true})
-                setTitle(page.title)
-              }}
-              sx={{...(location.pathname.includes('/'+page.path) ? activeMixin(theme) : inactiveMixin(theme))}}
-            >
-              <ListItemIcon sx={{color: 'inherit'}}>
-                {page.icon}
-              </ListItemIcon>
-              <ListItemText primary={page.title} sx={{color: 'white'}}/>
-            </ListItem>
+          <Box key={idx} sx={sx.menuRow} onClick={() => { 
+            navigate(''+page.path, { replace: true })
+            setTitle(page.title)
+          }}>
+            <Box sx={{...sx.menuInnerRow, ...(location.pathname.includes('/'+page.path) && sx.activeInnerRow)}} className={'inner-row'}>
+              {page.icon}
+              <Box sx={sx.menuText}>{page.title}</Box>
+            </Box>
+          </Box>
           ))}
-          <ListItem button onClick={signOut}>
-            <ListItemIcon sx={{color: 'secondary.main', cursor: 'pointer'}}>
-              <LogoutIcon/>
-            </ListItemIcon>
-            <ListItemText primary='Sign Out' sx={{color: 'white'}}/>
-          </ListItem>
-        </List>
-      </Drawer>
-      <Box sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        flexGrow: 1,
-        padding: '0 20px'
-      }}>
+          <Box sx={sx.menuRow} onClick={signOut}>
+            <Box sx={sx.menuInnerRow} className={'inner-row'}>
+              <LogoutIcon sx={sx.menuIcon}/>
+              <Box sx={sx.menuText}>Sign Out</Box>
+            </Box>
+          </Box>
+        </Box>
         <Box sx={{
-          padding: '20px 0'
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          padding: '0 20px'
         }}>
           <Box sx={{
-            color: 'primary.main',
-            fontWeight: '600',
-            fontSize: '24px',
-          }}>{title}</Box>
+            padding: '40px 0'
+          }}>
+            <Box sx={{
+              color: 'primary.light',
+              fontWeight: '600',
+              fontSize: '24px',
+            }}>{title}</Box>
+          </Box>
+          <Routes>
+            <Route index element={<DashLanding/>}/>
+            <Route path="/my_account" element={<AccountPage/>}/>
+            <Route path="/deposit" element={<DepositPage/>}/>
+            <Route path='/new_card' element={<NewCardPage/>}/>
+          </Routes>
         </Box>
-        <Routes>
-          {/* <Route index element={<DashLanding/>}/> */}
-          <Route path="/my_account" element={<AccountPage/>}/>
-        </Routes>
       </Box>
     </Box>
   )

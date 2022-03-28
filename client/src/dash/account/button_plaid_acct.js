@@ -1,6 +1,6 @@
-import { useCallback, useReducer, useContext, useEffect, useState } from 'react'
+import { useCallback, useReducer, useContext, useEffect } from 'react'
 import { AppContext } from '../../universal/AppContext'
-import { Button } from '@mui/material'
+import { Button, CircularProgress } from '@mui/material'
 import axios from 'axios'
 import { usePlaidLink } from 'react-plaid-link'
 
@@ -29,7 +29,7 @@ function reducer(state, action) {
   }
 }
 
-export default function PlaidAcctBtn(props){
+export default function PlaidAcctLink(props){
   const [ state, dispatch ] = useReducer(reducer, initialState)
   const { userToken } = useContext(AppContext)
 
@@ -83,7 +83,7 @@ export default function PlaidAcctBtn(props){
     init()
   }, [dispatch])
 
-  return state.backend && state.linkToken
+  return state.backend && state.linkToken 
     ? (
       <Link 
         linkToken={state.linkToken} 
@@ -91,32 +91,27 @@ export default function PlaidAcctBtn(props){
         text={props.text}
         userToken={userToken}
       />
-    ) : state.linkToken == null || state.linkToken == "" ? (
-      <Button
-        variant='contained'
-        size='small'
-        color='primary'
-        onClick={init}
-      >{props.text}</Button>
     ) : (
       <Button
         variant='contained'
         size='small'
-        color='primary'
-        disabled={true}
-      >{props.text}</Button>
+        disabled
+      >
+        <CircularProgress size={22}/>
+      </Button>
     )
 }
 
 function Link(props) {
   const { linkToken, dispatch, text, userToken } = props
+  const { update } = useContext(AppContext)
   
-  const onSuccess = useCallback( (public_token) => {
+  const onSuccess = useCallback( (public_token, metadata) => {
     const setToken = async () => {
       const response = await fetch('/stripe/set_plaid_access_token', {
         method: 'POST',
-        headers: { Authorization: `JWT ${userToken}`, "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-        body: `public_token=${public_token}`
+        headers: { Authorization: `JWT ${userToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(metadata)
       })
       if (!response.ok) {
         dispatch({
@@ -138,6 +133,7 @@ function Link(props) {
           isItemAccess: true,
         }
       })
+      update()
     }
     setToken()
     dispatch({ type: 'SET_STATE', state: { linkSuccess: true } })
@@ -168,7 +164,7 @@ function Link(props) {
     <Button
       variant='contained'
       size='small'
-      color='primary'
+      color='secondary'
       onClick={() => open()}
       disabled={!ready}
     >{text}</Button>

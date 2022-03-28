@@ -46,16 +46,15 @@ router.post('/save_user', passport.authenticate('check', {session: false}), (req
   })
 })
 
-// router.post('/update_user', passport.authenticate('check', {session: false}), (req, res, next)=>{
-//   User.findOneAndUpdate({_id: req.user._id}, req.body.update, {new: true}).exec((err, result)=>{
-//     if (err) { return res.sendStatus(400) }
-//     Household.findById(result.default_household, (err, doc)=>{
-//       res.send({
-//         user: result,
-//         default_household: doc
-//       })
-//     })
-//   })
-// })
+router.post('/update', passport.authenticate('check', {session: false}), (req, res, next)=>{
+  Promise.resolve()
+  .then( async () => {
+    await User.findOneAndUpdate({_id: req.user._id}, req.body.updates, {new: true}).exec()
+    let user = await User.findById(req.user._id)
+    res.json({user: user})
+  })
+  .catch(next)  
+})
+
 
 module.exports = router   

@@ -13,6 +13,7 @@ import UserAuthenticator from './landing/signin/user_auth'
 export default function App(props) {
   const [userToken, setUserToken] = useState(localStorage.getItem('userToken') || '')
   const [user, setUser] = useState()
+  const [updated, setUpdated] = useState()
   const tokenSource = axios.CancelToken.source()
   const location = useLocation()
   const navigate = useNavigate()
@@ -24,7 +25,6 @@ export default function App(props) {
     .then(res=>{
       setUser(res.data.user)
       setTimeout(()=>navigate(curLocation), 100)
-      console.log(curLocation)
     })
     .catch(err=>{})
     return () => source.cancel()
@@ -36,10 +36,13 @@ export default function App(props) {
     user: user,
     userToken: userToken,
 
+    updated: updated,
+    update: () => setUpdated(!updated),
+
     signUp: (vals, cb) => {
       axios.post('/user/signup', {email: vals.email, password: vals.password}, {cancelToken: tokenSource.token})
         .then(res => cb(res.data))
-        .catch(err => cb({err: true, msg: "We're sorry, something went wrong. Please try again."}))
+        .catch(err => {cb({err: true, msg: "We're sorry, something went wrong. Please try again."})})
       return () => tokenSource.cancel()
     },
 
@@ -72,7 +75,20 @@ export default function App(props) {
           cb(err, undefined)
         })
       return () => tokenSource.cancel()
-    }
+    },
+
+    updateUser: async (updates, cb) => {
+      const response = await fetch('/user/update', {
+        method: 'POST',
+        headers: { Authorization: `JWT ${userToken}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({updates: updates})
+      })
+      if (!response.ok) {
+        cb("An unexpected error occured. Please try again later.")
+      }
+      const data = await response.json()
+      setUser(data.user)
+    } 
 
   }))
 
