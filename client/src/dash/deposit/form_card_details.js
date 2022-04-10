@@ -1,55 +1,18 @@
-import { Box, Button, CircularProgress, InputBase, useTheme, alpha } from "@mui/material"
+import { Box, Button, CircularProgress,  useTheme, alpha } from "@mui/material"
 import { useEffect, useReducer, useContext, useState } from "react"
 import { AppContext } from "../../universal/AppContext"
 import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useStripe, useElements, CardExpiryElement, CardCvcElement, CardNumberElement } from '@stripe/react-stripe-js'
 import { useNavigate } from "react-router-dom"
+import InputBase from '../../components/input_base'
+import InputContainer from '../../components/input_container'
 
 const stripePromise = loadStripe('pk_test_51KfXHDKvgqo0azpYWnUODCrVSl8iwHKQ74oEza3wHhSSJYXGehCF2ZjDJCNKYOiFA7JHScdqwekcjxmLQwZ75i1m00YAfrdgVx')
 
-
-const reducer = (s, a) => {
-  switch (a.type) {
-    case 'set': return { ...s, ...a.state }
-    // case 'set_error': return { ...s, errors: {...s.errors, ...a.state} }
-    default: return { ...s }
-  }
-}
-
 export default function NewCardPage(props) {
   const { userToken, user } = useContext(AppContext)
-  const initState = {
-    loading: true,
-    loading_error: null,
-    processing: false,
-    processing_error: null,
-    client_secret: null,
-    focusedElement: null,
-    nickname: { value: null, error: null },
-    name: { value: user.billing_address.first_name + ' ' + user.billing_address.last_name, error: null },
-    address1: { value: user.billing_address.address_line1, error: null },
-    address2: { value: user.billing_address.address_line2, error: null },
-    postal_code: { value: user.billing_address.address_zip, error: null },
-    cardExpiry: { value: null, error: null },
-    cardNumber: { value: null, error: null },
-    cardCvc: { value: null, error: null }
-  }
-  const [ state, dispatch ] = useReducer(reducer, initState)
-  const theme = useTheme()
-
-  useEffect( async () => {
-    const response = await fetch('/stripe/create_setup_intent', { 
-      method: 'GET', 
-      headers: { Authorization: `JWT ${userToken}`, 'Content-Type': 'application/json'},
-    })
-    if (!response.ok) {
-      dispatch({ type: 'set', state: { loading: false, client_secret: null}})
-      return
-    }
-    const data = await response.json()
-    dispatch({ type: 'set', state: { loading: false, client_secret: data.client_secret}})
-  }, [])
-
+  const { state, dispatch, sx } = props
+  
   return (
     <Box sx={{display: 'flex', flexDirection: 'column'}}>
       {state.loading ? (
@@ -60,9 +23,8 @@ export default function NewCardPage(props) {
         <Elements stripe={stripePromise} options={{
           clientSecret: state.client_secret,
           fonts: [ { cssSrc: "https://fonts.googleapis.com/css2?family=Dosis:wght@200;300;400;500;600;700;800&display=swap" }],
-          // appearance: appearance
         }}>
-          <CardForm state={state} dispatch={dispatch} user={user} userToken={userToken}/>
+          <CardForm state={state} dispatch={dispatch} user={user} userToken={userToken} sx={sx}/>
         </Elements>
       ) : (
         <Box>An Unexpected error occured. Please try later.</Box>
@@ -71,53 +33,14 @@ export default function NewCardPage(props) {
   )
 }
 
-const createStyle = (theme) => ({
-  container: {
-    marginRight: '20px',
-  },
-  input_base: {
-    border: '1px solid '+alpha(theme.palette.background.contrast, 0.5),
-    borderRadius: '18px',
-    paddingLeft: '18px',
-  },
-  input_focus: {
-    backgroundColor: alpha(theme.palette.background.contrast, 0.1),
-    borderColor: theme.palette.background.contrast
-  },
-  input_error: {
-    borderColor: theme.palette.error.main
-  },
-  input_complete: {
-    borderColor: alpha(theme.palette.background.contrast, 0.1)
-  },
-  input_text_field: {
-    '& fieldset': { display: 'none' },
-    '& input': { 
-      padding: '0', 
-      height: '36px',
-      fontSize: '18px'
-    },
-  },
-  card: {
-    base: {
-      color: 'white',
-      lineHeight: '36px',
-      fontSize: '18px',
-      fontFamily: theme.typography.fontFamily
-    },
-    invalid: {
-      color: theme.palette.error.main
-    }
-  }
-})
 
 const CardForm = (props) => {
-  const { state, dispatch, user, userToken } = props
+  const { state, dispatch, user, userToken, sx } = props
   const stripe = useStripe()
   const elements = useElements()
   const theme = useTheme()
-  const style = createStyle(theme)
   const navigate = useNavigate()
+  console.log(state.method)
 
   const handleSubmit = async () => {
     // Exit if these items aren't loaded
@@ -125,7 +48,7 @@ const CardForm = (props) => {
     dispatch({ type: 'set', state: { processing: true, processing_error: null }})
     // Check for errors and missing fields
     let newStates = {}
-    let keys = [ 'nickname', 'name', 'address1', 'postal_code' ]
+    let keys = [ 'name', 'line1', 'postal_code' ]
     keys.map(key => {
       if (!state[key].value) newStates[key] = {value: null, error: {message: 'Required'}}
     })
@@ -146,10 +69,10 @@ const CardForm = (props) => {
     // Create card token
     const result = await stripe.createToken( element, {
       name: state.name.value,
-      address_line1: state.address1.value,
-      address_line2: state.address2.value,
+      address_line1: state.line1.value,
+      address_line2: state.line2.value,
       address_zip: state.postal_code.value,
-      address_country: user.billing_address.address_country,
+      address_country: user.billing_address.country,
       currency: 'usd'
     })
     if (result.error) {
@@ -161,7 +84,7 @@ const CardForm = (props) => {
     const response = await fetch('/stripe/create_card', {
       method: 'POST',
       headers: { Authorization: `JWT ${userToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({token: result.token.id, nickname: state.nickname.value})
+      body: JSON.stringify({token: result.token.id, client_secret: state.client_secret})
     })
     if (!response.ok) {
       dispatch({ type: 'set', state: { processing: false, processing_error: 'Connectivity issue. Please try again later.'}})
@@ -170,10 +93,16 @@ const CardForm = (props) => {
     // Check if card was valid
     const data = await response.json()
     if (data.error) {
-      dispatch({ type: 'set', state: { processing: false, processing_error: data.error.message } })
+      dispatch({ type: 'set', state: { 
+        processing: false, 
+        processing_error: data.error.message 
+      }})
     } else {
-      dispatch({ type: 'set', state: { processing: false, processing_error: null } })
-      navigate('/dash/deposit')
+      dispatch({ type: 'set', state: { 
+        processing: false, 
+        processing_error: null,
+      }})
+      navigate('../charge_details', {replace: true})
     }
   }
 
@@ -187,47 +116,38 @@ const CardForm = (props) => {
     dispatch({ type: 'set', state: { [e.elementType]: { ...[e.elementType].value, error: e.error } } })
   }
   const changeInputChange = (prop) => (e) => {
-    let error = !e.target.value && prop !== 'address2' && {message: 'Required'}
-    dispatch({ type: 'set', state: { [prop]: {value: e.target.value, error: error} } })
+    let error = !e.target.value && prop !== 'line2' && {message: 'Required'}
+    dispatch({ type: 'set', state: { [prop]: {value: e.target.value, error: error}, processing_error: null } })
   }
 
   const textInputs = [
     {code: 'name', width: null, title: 'Name on Card'},
-    {code: 'address1', width: '160px', title: 'Address Line 1'},
-    {code: 'address2', width: '160px', title: 'Address Line 2'},
+    {code: 'line1', width: '160px', title: 'Address Line 1'},
+    {code: 'line2', width: '160px', title: 'Address Line 2'},
     {code: 'postal_code', width: '160px', title: 'Zip'},
   ]
 
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', maxWidth: '360px'}}>
+      
+      <Box sx={{
+        color: theme.palette.grey[200],
+        borderBottom: '1px solid '+theme.palette.grey[800],
+        fontSize: '14px',
+        paddingBottom: '5px',
+        marginBottom: '5px'
+      }}>Card Details</Box>
+      {state.has_payment_method && <CardExpiration method_expiry={state.method_expiry} state={state} dispatch={dispatch}/>}
       <Box sx={{display: 'flex', flexWrap: 'wrap'}}>
-        <InputContainer
-          title='Card Nickname'
-          error={state.nickname.error}
-          focused={state.focusedElement === 'nickname'}
-          width={null}
-        >
-          <InputBase
-            placeholder='Card nickname...'
-            fullWidth={true}
-            margin='none'
-            sx={style.input_text_field}
-            onChange={changeInputChange('nickname')}
-            value={state.nickname.value || ''}
-            onFocus={() => handleFocus({elementType: 'nickname'})}
-            onBlur={() => handleBlur({elementType: 'nickname'})}
-          />
-        </InputContainer>
         <InputContainer 
           width='340px' 
           focused={state.focusedElement === 'cardNumber'}
           error={state.cardNumber.error}
           title='Card Number'
+          sx={sx}
         >
           <CardNumberElement
-            options={{
-              style: style.card
-            }}
+            options={{ style: sx.card }}
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -238,9 +158,10 @@ const CardForm = (props) => {
           focused={state.focusedElement === 'cardExpiry'}
           error={state.cardExpiry.error}
           title='Expiration'
+          sx={sx}
         >
           <CardExpiryElement
-            options={{ style: style.card }}
+            options={{ style: sx.card }}
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
@@ -251,14 +172,25 @@ const CardForm = (props) => {
           focused={state.focusedElement === 'cardCvc'}
           error={state.cardCvc.error}
           title='CVC'
+          sx={sx}
         >
           <CardCvcElement
-            options={{ style: style.card }}
+            options={{ style: sx.card }}
             onChange={handleChange}
             onFocus={handleFocus}
             onBlur={handleBlur}
           />
         </InputContainer>
+      </Box>
+      <Box sx={{
+          color: theme.palette.grey[200],
+          borderBottom: '1px solid '+theme.palette.grey[800],
+          fontSize: '14px',
+          paddingBottom: '5px',
+          marginBottom: '5px',
+          marginTop: '20px'
+        }}>Billing Address</Box>
+      <Box sx={{display: 'flex', flexWrap: 'wrap'}}>
         {textInputs.map((input, idx) => (
         <InputContainer
           key={idx}
@@ -266,12 +198,13 @@ const CardForm = (props) => {
           error={state[input.code].error}
           focused={state.focusedElement === input.code}
           width={input.width}
+          sx={sx}
         >
           <InputBase
             placeholder={input.title + '...'}
             fullWidth={!input.width ? true : false}
             margin='none'
-            sx={style.input_text_field}
+            sx={sx.input_text_field}
             onChange={changeInputChange(input.code)}
             value={state[input.code].value || ''}
             onFocus={() => handleFocus({elementType: input.code})}
@@ -280,22 +213,34 @@ const CardForm = (props) => {
         </InputContainer>
       ))}
       </Box>
-      <Box sx={{display: 'flex', alignItems: 'flex-start'}}>
+      <Box sx={{display: 'flex', alignItems: 'flex-start', justifyContent:'flex-end', paddingRight: '20px'}}>
+        {state.processing_error && (
+          <Box sx={{
+            padding: '0 20px 0 0', 
+            justifySelf: 'center', 
+            alignItems: 'flex-start',
+            fontSize: '12px',
+            flexGrow: 1,
+            color: theme.palette.error.main
+          }}>{state.processing_error}</Box>
+        )}
         <Button
           color='secondary'
           variant='contained'
           size='small'
-          disabled={!stripe || !elements || !state.nickname}
+          disabled={!stripe || !elements || !state.nickname || state.processing}
           onClick={handleSubmit}
           sx={{minWidth: '100px'}}
-        >{state.processing ? <CircularProgress size={24}/> : 'Save Card'}</Button>
-        {state.processing_error && (
-          <Box sx={{
-            padding: '0 20px 0 10px', 
-            justifySelf: 'center', 
-            alignItems: 'center',
-            color: theme.palette.error.main
-          }}>{state.processing_error}</Box>
+        >{state.processing ? <CircularProgress size={24}/> : state.has_payment_method ? 'Update' : 'Confirmation'}</Button>
+        {state.has_payment_method && (
+          <Button
+            color='secondary'
+            variant='contained'
+            size='small'
+            disabled={!state.has_payment_method}
+            onClick={()=>navigate('../charge_details')}
+            sx={{minWidth: '100px', marginLeft: '10px'}}
+          >Next</Button>
         )}
       </Box>
     </Box>
@@ -303,33 +248,34 @@ const CardForm = (props) => {
 
 }
 
-function InputContainer(props){
+function CardExpiration(props) {
+  const { method_expiry, state, dispatch } = props
+  const [ seconds, setSeconds ] = useState(Math.round(method_expiry * 60))
   const theme = useTheme()
-  const style = createStyle(theme)
-  const { focused, error, title } = props
+
+  useEffect(() => {
+    let interval = setInterval(() => {
+      if (seconds === 1) dispatch({type: 'set', state: { refresh_payment_intent: !state.refresh_payment_intent}})
+      setSeconds(seconds => seconds-1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [seconds])
+
+  const getMinutes = (time) => {
+    let mins = Math.floor(time / 60)
+    let sec = time % 60
+
+    return mins + ':' + ( sec < 10 ? '0' + sec : sec)
+  }
+
   return (
-    <Box sx={{...style.container, minWidth: props.width, maxWidth: props.width, flexGrow: props.width ? null : 1, marginBottom: '20px'}}>
-      <Box sx={{
-        color: alpha(theme.palette.primary.main, 0.8),
-        fontSize: '18px',
-        fontWeight: '400',
-        paddingLeft: '18px',
-      }}>{title}</Box>
-      <Box sx={{
-        ...style.input_base, 
-        ...(focused && style.input_focus), 
-        ...(error && style.input_error),
-      }}>
-        {props.children}
-      </Box>
-      {error && (
-        <Box sx={{
-          color: theme.palette.error.main,
-          fontSize: '12px',
-          fontWeight: '500',
-          padding: '0 10px'
-        }}>{error.message}</Box>
-      )}
-    </Box>
+    <Box sx={{
+      color: 'success.main',
+      backgroundColor: alpha(theme.palette.success.main, 0.1),
+      border: '1px solid '+alpha(theme.palette.success.main, 0.4),
+      borderRadius: '10px',
+      padding: '2px 5px',
+      marginBottom: '10px'
+    }}>{'Card saved ( expires in '+getMinutes(seconds)+' minutes )'}</Box>
   )
 }

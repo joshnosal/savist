@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material'
+import { createTheme, alpha } from '@mui/material'
 import { yellow, deepOrange, green, blue, cyan } from '@mui/material/colors'
 
 
@@ -14,6 +14,11 @@ const grey = {
   800: '#26262B',
   900: '#07070D',
 }
+const white = 'rgb(255,255,255)'
+const black = 'rgb(0,0,0)'
+
+const fontFamily = "'Dosis', sans-serif"
+
 
 export const Theme = createTheme({
     
@@ -22,48 +27,38 @@ export const Theme = createTheme({
       primary: {main: cyan[600], light: cyan[300], dark: cyan[900]},
       secondary: {main: deepOrange[800], light: deepOrange.A200, dark: deepOrange[600]},
       warning: {main: yellow[500], light: yellow[300], dark: yellow[600]},
-      background: {contrast: 'rgb(255,255,255)', default: 'rgb(0,0,0)'},
+      background: {contrast: white, default: black},
       grey: grey
     },
     typography: {
-      fontFamily: "'Dosis', sans-serif",
+      fontFamily: fontFamily,
       fontWeightRegular: 300,
-      fontSize: 14
+      fontSize: 16
     },
-
     components: {
-      MuiOutlinedInput: {
-        variants: [
-          {
-            props: { variant: 'light_bg' },
-            style: { 
-              backgroundColor: 'white',
-              '& fieldset': { display: 'none' }
-            }
-          }
-        ]
-      },
-      MuiCheckbox: {
-        variants: [
-          {
-            props: {variant: 'white' },
-            style: {
-              color: 'white',
-              '&.Mui-checked svg': { color: 'white', fill: 'white' }
-            }
-          }
-        ]
-      },
       MuiButton: {
         variants: [
+          {
+            props: {},
+            style: {
+              padding: '4px 10px',
+            }
+          },
           {
             props: { variant: 'contained', size: 'small' },
             style: {
               borderRadius: '15px'
             }
+          },
+          {
+            props: { variant: 'text', size: 'small' },
+            style: {
+              borderRadius: '15px',
+              '&:hover': {backgroundColor: alpha(white, 0.2)}
+            }
           }
         ]
-      }
+      },
     }
 })
 

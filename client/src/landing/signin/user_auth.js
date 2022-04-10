@@ -1,14 +1,15 @@
-import React from 'react'
-import { Navigate } from 'react-router-dom'
 
-import DashRouter from '../../dash'
-import LoadingScreen from './loading'
+import { Navigate } from 'react-router-dom'
+import DashLanding from '../../dash'
+import LoadingPage from './loading'
+
 
 export default function UserAuthenticator(props){
-  if (props.loading) {
-    return <LoadingScreen/>
-  } else if (props.user && props.userToken) {
-    return <DashRouter {...props}/>
+  const { loading, userToken, user } = props
+  if (loading) {
+    return <LoadingPage/>
+  } else if (user && userToken) {
+    return <DashLanding {...props}/>
   } else {
     return <Navigate to='/access' replace={true}/>
   }

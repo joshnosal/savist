@@ -1,96 +1,88 @@
-import React, { useState, useMemo, useEffect } from 'react'
-import { CssBaseline, ThemeProvider } from '@mui/material'
+import { useMemo, useReducer, useEffect } from 'react'
 import LocalizationProvider from '@mui/lab/LocalizationProvider'
-import axios from 'axios'
-import AdapterDateFns from '@mui/lab/AdapterDateFns'
+import { CssBaseline, ThemeProvider } from '@mui/material'
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom'
 import { AppContext } from './universal/AppContext'
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { Theme } from './universal/CustomTheme'
+import { createStyles } from './universal/CustomStyles'
+import AdapterDateFns from '@mui/lab/AdapterDateFns'
+
 import LandingRouter from './landing'
-import SigninRouter from './landing/signin'
 import UserAuthenticator from './landing/signin/user_auth'
+import AccessPage from './landing/signin'
 
-export default function App(props) {
-  const [userToken, setUserToken] = useState(localStorage.getItem('userToken') || '')
-  const [user, setUser] = useState()
-  const [updated, setUpdated] = useState()
-  const tokenSource = axios.CancelToken.source()
-  const location = useLocation()
+const reducer = (s, a) => ({...s, ...a})
+
+export default function App(props){
+  const [ state, dispatch ] = useReducer(reducer, {
+    loading: true,
+    user: null,
+    userToken: localStorage.getItem('userToken'),
+    updated: false,
+  })
+  const controller = new AbortController()
+  const { signal } = controller
   const navigate = useNavigate()
+  const sx = createStyles(Theme)
 
-  useEffect(()=>{
-    const curLocation = location.pathname
-    const source = axios.CancelToken.source()
-    axios.get('/user/get_user', {headers: {Authorization: `JWT ${userToken}`}, cancelToken: source.token})
-    .then(res=>{
-      setUser(res.data.user)
-      setTimeout(()=>navigate(curLocation), 100)
+  useEffect( async () => {
+    if (!state.userToken) return dispatch({ user: null })
+    const response = await fetch('/user/get_user', {
+      method: 'GET',
+      headers: { Authorization: `JWT ${state.userToken}`},
+      signal
     })
-    .catch(err=>{})
-    return () => source.cancel()
-  },[userToken])
+    if (!response.ok) return dispatch({ user: null, userToken: null })
+    const data = await response.json()
+    dispatch({ user: data.user, loading: false })
+    return () => controller.abort()
+  }, [])
 
-  useEffect(() => { if (userToken) return localStorage.setItem('userToken', userToken)}, [userToken])
+  useEffect(() => { if (state.userToken) return localStorage.setItem('userToken', state.userToken)}, [state.userToken])
 
   const appContext = useMemo(() => ({
-    user: user,
-    userToken: userToken,
+    user: state.user,
+    userToken: state.userToken,
+    brand: 'Ruebsy',
+    sx: sx,
+    updated: state.updated,
+    update: () => dispatch({ updated: !state.updated }),
 
-    updated: updated,
-    update: () => setUpdated(!updated),
-
-    signUp: (vals, cb) => {
-      axios.post('/user/signup', {email: vals.email, password: vals.password}, {cancelToken: tokenSource.token})
-        .then(res => cb(res.data))
-        .catch(err => {cb({err: true, msg: "We're sorry, something went wrong. Please try again."})})
-      return () => tokenSource.cancel()
+    signIn: async (vals, cb) => {
+      const response = await fetch('/user/signin', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email: vals.email, password: vals.password, remember: vals.remember}),
+        signal
+      })
+      if(!response.ok) return cb({err: true, msg: 'An unexpected error occured. Please try again.'})
+      const data = await response.json()
+      dispatch({ user: data.obj.user, userToken: data.msg })
+      cb(data)
+      return () => controller.abort()
     },
 
-    signIn: (vals, cb) => {
-      axios.post('/user/signin', {email: vals.email, password: vals.password, remember: vals.remember}, {cancelToken: tokenSource.token})
-        .then(res => {
-          if(!res.data.err) {
-            setUser(res.data.obj.user)
-            setUserToken(res.data.msg)
-          }
-          cb(res.data)
-        })
-        .catch(err => cb({err: true, msg: "We're sorry, something went wrong. Please try again."}))
-      return () => tokenSource.cancel()
-    },
-    
     signOut: () => {
+      dispatch({ userToken: null, user: null })
       localStorage.removeItem('userToken')
-      setUserToken()
-      setUser()
       navigate('/')
-    },
-
-    getUser: (cb) => {
-      axios.get('/user/get_user', {headers: {Authorization: `JWT ${userToken}`}, cancelToken: tokenSource.token})
-        .then(res=>{
-          cb(null, res.data)
-        })
-        .catch(err=>{
-          cb(err, undefined)
-        })
-      return () => tokenSource.cancel()
     },
 
     updateUser: async (updates, cb) => {
       const response = await fetch('/user/update', {
         method: 'POST',
-        headers: { Authorization: `JWT ${userToken}`, 'Content-Type': 'application/json'},
-        body: JSON.stringify({updates: updates})
+        headers: { Authorization: `JWT ${state.userToken}`, 'Content-Type': 'application/json'},
+        body: JSON.stringify({updates: updates}),
+        signal
       })
       if (!response.ok) {
-        cb("An unexpected error occured. Please try again later.")
+        return cb("An unexpected error occured. Please try again later.")
       }
       const data = await response.json()
-      setUser(data.user)
+      dispatch({ user: data.user})
+      return () => controller.abort()
     } 
-
-  }))
+  }), [state, dispatch])
 
   return (
     <ThemeProvider theme={Theme}>
@@ -99,12 +91,11 @@ export default function App(props) {
           <CssBaseline/>
           <Routes>
             <Route index element={<LandingRouter/>}/>
-            <Route path="access/*" element={user && userToken ? <Navigate to='/dash' replace={true}/> : <SigninRouter/>}/>
-            <Route path='dash/*' element={<UserAuthenticator user={user} userToken={userToken}/>}/>
+            <Route path='access/*' element={state.userToken && state.user ? <Navigate to='/dash' replace={true}/> : <AccessPage/>}/>
+            <Route path='dash/*' element={<UserAuthenticator userToken={state.userToken} user={state.user} loading={state.loading}/>}/>
           </Routes>
-        </AppContext.Provider>
+          </AppContext.Provider>
       </LocalizationProvider>
     </ThemeProvider>
   )
 }
-

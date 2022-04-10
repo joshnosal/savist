@@ -1,96 +1,98 @@
-import React, { useState, useContext } from 'react'
-import { Box, OutlinedInput, Button, CircularProgress } from '@mui/material'
-import { useNavigate } from 'react-router-dom'
-import { AppContext } from '../../universal/AppContext'
+import { Box, Button, ButtonBase, CircularProgress } from '@mui/material'
+import { useReducer } from 'react'
+import InputContainer from '../../components/input_container'
+import InputBase from '../../components/input_base'
 
-export default function SignUpDialog(props){
-  const sx = props.sx
-  const navigate = useNavigate()
-  const empty = { email: '', password: '', confirm: ''}
-  const [error, setError] = useState('')
-  const [values, setValues] = useState(empty)
-  const [loading, setLoading] = useState(false)
-  const { signUp } = useContext(AppContext)
+const reducer = (s, a) => ({ ...s, ...a})
 
+export default function SignUpForm(props) {
+  const controller = new AbortController()
+  const { signal } = controller
+  const { custom_sx, setPage, sx } = props
+  const [ state, dispatch ] = useReducer(reducer, {
+    email: {value: null, error: null},
+    password: {value: null, error: null},
+    confirm: {value: null, error: null},
+    focusedElement: null,
+    error_message: null,
+    loading: false
+  })
+
+  const inputs = [
+    {type: 'email', field_type: 'email', width: null, title: 'Email'},
+    {type: 'password', field_type: 'password', width: null, title: 'Password'},
+    {type: 'confirm', field_type: 'password', width: null, title: 'Confirmation'},
+  ]
+
+  const handleBlur = (prop) => (e) => dispatch({ focusedElement: null })
+  const handleFocus = (prop) => (e) => dispatch({ focusedElement: prop })
   const handleChange = (prop) => (e) => {
-    setValues({...values, [prop]: e.target.value})
-    setError('')
+    let error = !e.target.value ? {message: 'Required'} : null 
+    dispatch({ [prop]: {value: e.target.value, error: error }, error_message: null })
   }
 
-  const submitForm = () => {
-    if (!values.email) return setError('Please enter your email')
-    if (!values.password) return setError('Please enter a password')
-    if (!values.confirm) return setError('Please confirm your password')
-    if (values.confirm !== values.password) return setError('Passwords do not match')
-    setLoading(true)
-    signUp(values, (res) => {
-      setLoading(false)
-      if (res.err) {
-        setError(res.msg)
-        setValues(empty)
-      } else {
-        navigate('../')
-      }
+  const handleSubmit = async () => {
+    dispatch({ loading: true })
+    let stateUpdate = {}
+    inputs.map(item => {
+      if (!state[item.type].value) stateUpdate[item.type] = { value: null, error: {message: 'Required'}}
     })
+    if (state.password.value !== state.confirm.value) stateUpdate.confirm = { value: state.confirm.value, error: {message: "Doesn't match"}}
+    if (Object.keys(stateUpdate).length > 0) return dispatch({...stateUpdate, loading: false})
+    const response = await fetch('/user/signup', {
+      method: 'POST',
+      headers: { "Content-Type": 'application/json'},
+      signal,
+      body: JSON.stringify({email: state.email.value, password: state.password.value})
+    })
+    if (!response.ok) dispatch({ loading: false, error_message: 'An unexpected error occured. Please try again.'})
+    setPage('success')
+    return () => controller.abort()
   }
 
   return (
-    <>
-      <Box sx={sx.header}>Sign Up</Box>
-      <Box sx={sx.inputRow}>
-        <OutlinedInput
-          variant='light_bg'
-          margin='dense'
-          placeholder='Email...'
-          type='email'
-          fullWidth={true}
-          onChange={handleChange('email')}
-          value={values.email}
-        />
+    <Box sx={custom_sx.container}>
+      <Box sx={custom_sx.title_block}>
+        Sign Up
       </Box>
-      <Box sx={sx.inputRow}>
-        <OutlinedInput
-          variant='light_bg'
-          placeholder='Password...'
-          type='password'
-          fullWidth={true}
-          onChange={handleChange('password')}
-          value={values.password}
-        />
-      </Box>
-      <Box sx={sx.inputRow}>
-        <OutlinedInput
-          variant='light_bg'
-          placeholder='Confirm...'
-          type='password'
-          fullWidth={true}
-          onChange={handleChange('confirm')}
-          value={values.confirm}
-        />
-      </Box>
-      <Box sx={{...sx.inputRow, display: error ? 'flex' : 'none'}}>
-        <Box sx={{
-          color: 'red'
-        }}>{error}</Box>
-      </Box>
-      <Box sx={sx.submitRow}>
+      {inputs.map((input, idx) => (
+        <InputContainer
+          key={idx}
+          title={input.title}
+          error={state[input.type].error}
+          focused={state.focusedElement === input.type}
+          width={input.width}
+          sx={sx}
+        >
+          <InputBase
+            onChange={handleChange(input.type)}
+            value={state[input.type].value}
+            onFocus={handleFocus(input.type)}
+            onBlur={handleBlur(input.type)}
+            type={input.field_type}
+          />
+        </InputContainer>
+      ))}
+      <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
         <Button
-          sx={sx.navButton}
-          onClick={() => navigate('../', {replace: true})}
+          color='secondary'
+          size='small'
+          disableTouchRipple
+          sx={{ marginRight: '10px' }}
+          onClick={()=>setPage('signin')}
+          disabled={state.loading}
         >Sign In</Button>
         <Button
+          color='secondary'
           variant='contained'
-          sx={sx.submitButton}
-          disableElevation={true}
-          onClick={submitForm}
-        >{loading ? <CircularProgress sx={{color: 'primary.main'}} size={24}/> : 'Submit'}</Button>
+          size='small'
+          onClick={handleSubmit}
+          disabled={state.loading}
+        >
+          {state.loading ? <CircularProgress size={24}/> : 'Submit'}
+        </Button>
       </Box>
-      <Box sx={sx.resetRow}>
-        <Box 
-          sx={sx.resetLink}
-          onClick={() => navigate('../reset', {replace: true})}
-        >Reset Password</Box>
-      </Box>
-    </>
+      {state.error_message && <Box sx={{color:'error.main', marginTop: '20px'}}>{state.error_message}</Box>}
+    </Box>
   )
 }

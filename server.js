@@ -11,6 +11,8 @@ const passport = require('passport')
 const passportRoute = require('./routes/passport')
 const userRouter = require('./routes/user')
 const stripeRouter = require('./routes/stripe')
+const stripeHooksRouter = require('./routes/stripe_hooks')
+const adminRouter = require('./routes/admin')
 const path = require('path')
 
 const PORT = process.env.PORT || 4001
@@ -22,14 +24,9 @@ app.use(cookieParser(process.env.COOKIE_SECRET))
 app.use(passport.initialize())
 
 app.use('/user', userRouter)
+app.use('/hooks', stripeHooksRouter)
 app.use('/stripe', passportRoute.authenticate('check', {session: false}), stripeRouter)
-
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.resolve(__dirname, "./client/build")))
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname,  "./client/build", "index.html"))
-  })
-}
+app.use('/admin', passportRoute.authenticate('checkAdmin', {session: false}), adminRouter)
 
 const dbURL = process.env.NODE_ENV !== 'production' ? process.env.TEST_DATABASE_URL : process.env.DATABASE_URL
 mongoose.connect(dbURL, {

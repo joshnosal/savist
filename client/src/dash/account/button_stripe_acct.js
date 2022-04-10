@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useReducer } from 'react'
 import { Box, Button, CircularProgress } from "@mui/material"
 import { AppContext } from '../../universal/AppContext'
-import { useLocation } from 'react-router-dom'
+import FormInstructions from '../../components/form_instructions'
 
 const initialState = { 
   loadingUpdate: true, 
@@ -20,8 +20,7 @@ function reducer(s, a) {
 
 export default function StripeAccountBtn(props) {
   const [ state, dispatch ] = useReducer(reducer, initialState)
-  const { userToken } = useContext(AppContext)
-  const location = useLocation()
+  const { userToken, brand } = useContext(AppContext)
 
   useEffect( async () => {
     const resp = await fetch('/stripe/account_enabled_check', {
@@ -77,12 +76,14 @@ export default function StripeAccountBtn(props) {
           { state.loadingUpdate ? <CircularProgress size={22}/> : 'Update' }
         </Button>
       </Box>
+      <FormInstructions marginTop={10}>{`NOTE: Apart from your ${brand} credentials and billing address above, all of your personal and sensitive data is securely stored with Stripe and will not be shared.`}</FormInstructions>
       { state.stripe_error && (
         <Box sx={{
           color: 'error.main',
           marginLeft: '20px'
         }}>Connection error. Please try back later.</Box>
       )}
+      
     </Box>
   )
 }

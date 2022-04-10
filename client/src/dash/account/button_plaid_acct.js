@@ -5,6 +5,7 @@ import axios from 'axios'
 import { usePlaidLink } from 'react-plaid-link'
 
 const initialState = {
+  loading: false,
   linkSuccess: false,
   isItemAccess: true,
   linkToken: "", 
@@ -88,6 +89,7 @@ export default function PlaidAcctLink(props){
       <Link 
         linkToken={state.linkToken} 
         dispatch={dispatch} 
+        state={state}
         text={props.text}
         userToken={userToken}
       />
@@ -103,7 +105,7 @@ export default function PlaidAcctLink(props){
 }
 
 function Link(props) {
-  const { linkToken, dispatch, text, userToken } = props
+  const { linkToken, dispatch, text, userToken, state } = props
   const { update } = useContext(AppContext)
   
   const onSuccess = useCallback( (public_token, metadata) => {
@@ -134,17 +136,23 @@ function Link(props) {
         }
       })
       update()
+      dispatch({ type: 'SET_STATE', state: { linkSuccess: true, loading: false } })
     }
     setToken()
-    dispatch({ type: 'SET_STATE', state: { linkSuccess: true } })
+    
     window.history.pushState("", "", "/")
   }, [dispatch])
+
+  const onExit = () => {
+    dispatch({type: 'SET_STATE', state: {loading: false} })
+  }
 
   let isOauth = false
 
   const config = {
     token: linkToken,
-    onSuccess: onSuccess
+    onSuccess: onSuccess,
+    onExit: onExit
   }
 
   if (window.location.href.includes("?oauth_state_id")) {
@@ -154,9 +162,14 @@ function Link(props) {
 
   const { open, ready, error } = usePlaidLink(config)
 
+  const handleOpen = () => {
+    open()
+    dispatch({type: 'SET_STATE', state: {loading: true} })
+  }
+
   useEffect(() => {
     if (isOauth && ready) {
-      open()
+      handleOpen()
     }
   }, [ready, open, isOauth])
 
@@ -165,9 +178,9 @@ function Link(props) {
       variant='contained'
       size='small'
       color='secondary'
-      onClick={() => open()}
-      disabled={!ready}
-    >{text}</Button>
+      onClick={handleOpen}
+      disabled={!ready || state.loading}
+    >{state.loading ? <CircularProgress size={22}/> : text}</Button>
   )
 
 }

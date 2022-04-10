@@ -30,30 +30,35 @@ router.post('/signin', (req, res, next) => {
 })
 
 router.get('/get_user', passport.authenticate('check', {session: false}), (req, res, next)=>{
-  res.send({user: req.user})
+  res.send({user: req.user, brand: process.env.BRAND})
 })
 
-router.post('/save_user', passport.authenticate('check', {session: false}), (req, res, next)=>{
-  User.findById(req.user._id, (err, user) => {
-    for (let key in req.body.user) {
-      if (req.body.user[key] !== user[key]) {
-        user[key] = req.body.user[key]
-      }
-    }
-    user.save((err, doc) => {
-      err ? res.sendStatus(400) : res.send(doc)
-    })
-  })
+router.get('/check', passport.authenticate('check', {session: false}), (req, res, next)=>{
+  res.sendStatus(200)
 })
 
 router.post('/update', passport.authenticate('check', {session: false}), (req, res, next)=>{
+  console.log(req.body.updates)
   Promise.resolve()
   .then( async () => {
-    await User.findOneAndUpdate({_id: req.user._id}, req.body.updates, {new: true}).exec()
     let user = await User.findById(req.user._id)
+    let updateKeys = Object.keys(req.body.updates)
+    updateKeys.map(key => {
+      user[key] = req.body.updates[key]
+    })
+    user = await user.save()
     res.json({user: user})
   })
   .catch(next)  
+})
+
+router.post('/update_billing_address', passport.authenticate('check', {session: false}), (req, res, next)=>{
+  Promise.resolve()
+  .then( async() => {
+    let user = await User.findById(req.user._id)
+    user.billing_address = req.body.update
+    await user.save()
+  })
 })
 
 

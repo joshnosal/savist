@@ -1,85 +1,77 @@
-import React from 'react'
-import { Box } from '@mui/material'
-import { Route, Routes } from 'react-router-dom'
-
-import ResetPWForm from './reset_pw'
-import SignInForm from './signin'
+import { Box, useTheme, IconButton } from '@mui/material'
+import { useState, useContext } from 'react'
+import { AppContext } from '../../universal/AppContext'
+import { useNavigate } from 'react-router-dom'
+import SuccessPage from './success'
 import SignUpForm from './signup'
-import { Theme } from '../../universal/CustomTheme'
+import SignInForm from './signin'
+import ResetRequestForm from './reset_request'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+
+const createStyles = () => ({
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    flexGrow: '1'
+  },
+  title_block: {
+    fontWeight: '500',
+    fontSize: '24px',
+    marginBottom: '20px',
+  }
+})
+
 
 export default function SigninRouter(props){
-  const sx = {
-    header: {
-      color: 'white',
-      fontWeight: '500',
-      fontSize: '36px'
-    },
-    inputRow: {
-      marginTop: '20px',
-    },
-    submitRow: {
-      marginTop: '20px',
-      display: 'flex',
-      justifyContent:'end'
-    },
-    submitButton: {
-      backgroundColor: 'white',
-      '&:hover': {
-        backgroundColor: Theme.palette.grey[400],
-      }
-    },
-    navButton: {
-      color: 'background.dark',
-      marginRight: '10px',
-      '&:hover': { backgroundColor: 'rgba(0,0,0,0.2)' },
-    },
-    resetRow: {
-      display: 'flex',
-      justifyContent: 'center',
-      marginTop: '20px',
-    },
-    resetLink: {
-      fontSize: '12px',
-      fontWeight: '600',
-      '&:hover': { 
-        color: 'white',
-        cursor: 'pointer',
-      },
+  const [ page, setPage ] = useState('signin')
+  const theme = useTheme()
+  const { brand, sx } = useContext(AppContext)
+  const custom_sx = createStyles()
+  const navigate = useNavigate()
+
+  const getPage = (prop) => {
+    switch(prop) {
+      default: return <SignInForm setPage={setPage} sx={sx} custom_sx={custom_sx}/>
+      case 'signup': return <SignUpForm setPage={setPage} sx={sx} custom_sx={custom_sx}/>
+      case 'reset': return <ResetRequestForm setPage={setPage} sx={sx} custom_sx={custom_sx}/>
+      case 'success': return <SuccessPage setPage={setPage} sx={sx} custom_sx={custom_sx} brand={brand}/>
     }
   }
-  
 
   return (
     <Box sx={{
-      backgroundColor: 'background.dark',
-      height: '100vh',
-      width: '100vw',
       display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center'
+      height: '100vh',
     }}>
+      <IconButton
+        sx={{
+          position:'fixed',
+          margin: '40px'
+        }}
+        disableFocusRipple
+        onClick={() => navigate('/', {replace: true})}
+      >
+        <ArrowBackIcon/>
+      </IconButton>
       <Box sx={{
-        backgroundColor: 'primary.main',
-        padding: '20px',
+        minWidth: '300px',
+        maxWidth: '300px',
+        borderRight: '1px solid '+theme.palette.grey[800],
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 40px'
+      }}>
+        {getPage(page)}
+      </Box>
+      <Box sx={{
+        color: 'primary.main',
+        padding: '40px',
         display: 'flex',
         flexDirection: 'column',
-        width: '350px'
+        justifyContent: 'center'
       }}>
-        <Routes>
-          <Route 
-            index 
-            element={<SignInForm sx={sx}/>}
-          />
-          <Route 
-            path="/signup" 
-            element={<SignUpForm sx={sx}/>}
-          />
-          <Route 
-            path="/reset"
-            element={<ResetPWForm sx={sx}/>}
-          />
-        </Routes>
+        <Box sx={{fontSize: '56px', fontWeight: '600'}}>{'Welcome to '+brand+'!'}</Box>
+        <Box sx={{fontSize: '24px', fontWeight: '400'}}>Cashing prepaids one day at a time</Box>
       </Box>
     </Box>
   )

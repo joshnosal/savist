@@ -1,6 +1,8 @@
-import { Box, InputBase, Button, CircularProgress, useTheme, alpha } from '@mui/material'
+import { Box, Button, CircularProgress, useTheme, alpha } from '@mui/material'
 import { useReducer, useContext, useEffect } from 'react'
 import { AppContext } from '../../universal/AppContext'
+import InputContainer from '../../components/input_container'
+import InputBase from '../../components/input_base'
 
 const reducer = (s, a) => {
   switch (a.type) {
@@ -15,26 +17,27 @@ export default function BillingAddressForm(props) {
   const [ state, dispatch ] = useReducer(reducer, {
     first_name: user.billing_address.first_name || '',
     last_name: user.billing_address.last_name || '',
-    address_line1: user.billing_address.address_line1 || '',
-    address_line2: user.billing_address.address_line2 || '',
-    address_city: user.billing_address.address_city || '',
-    address_state: user.billing_address.address_state || '',
-    address_zip: user.billing_address.address_zip || '',
-    address_country: user.billing_address.address_country || 'US',
+    line1: user.billing_address.line1 || '',
+    line2: user.billing_address.line2 || '',
+    city: user.billing_address.city || '',
+    state: user.billing_address.state || '',
+    postal_code: user.billing_address.postal_code || '',
+    country: user.billing_address.country || 'US',
+    focusedElement: null,
     changed: false,
     loading: false,
     error_message: ''
   })
 
   const inputs = [
-    {name: 'first_name', width: '230px', maxChar: 40, disabled: false, placeholder: 'First Name...'},
-    {name: 'last_name', width: '230px', maxChar: 40, disabled: false, placeholder: 'Last Name...'},
-    {name: 'address_line1', width: '230px', maxChar: 40, disabled: false, placeholder: 'Address Line 1...'},
-    {name: 'address_line2', width: '230px', maxChar: 40, disabled: false, placeholder: 'Address Line 2...'},
-    {name: 'address_city', width: '180px', maxChar: 40, disabled: false, placeholder: 'City...'},
-    {name: 'address_state', width: '160px', maxChar: 40, disabled: false, placeholder: 'State...'},
-    {name: 'address_zip', width: '100px', maxChar: 40, disabled: false, placeholder: 'Zip...'},
-    {name: 'address_country', width: '60px', maxChar: 40, disabled: true, placeholder: 'Country...'},
+    {name: 'first_name', width: '230px', maxChar: 40, disabled: false, title: 'First Name'},
+    {name: 'last_name', width: '230px', maxChar: 40, disabled: false, title: 'Last Name'},
+    {name: 'line1', width: '230px', maxChar: 40, disabled: false, title: 'Address Line 1'},
+    {name: 'line2', width: '230px', maxChar: 40, disabled: false, title: 'Address Line 2'},
+    {name: 'city', width: '140px', maxChar: 40, disabled: false, title: 'City'},
+    {name: 'state', width: '120px', maxChar: 40, disabled: false, title: 'State'},
+    {name: 'postal_code', width: '100px', maxChar: 40, disabled: false, title: 'Zip'},
+    {name: 'country', width: '60px', maxChar: 40, disabled: true, title: 'Country'},
   ]
 
   const handleChange = (prop) => (e) => {
@@ -47,11 +50,16 @@ export default function BillingAddressForm(props) {
   }
 
   useEffect(() => {
-    let keys = Object.keys(user.billing_address)
+    let vals = inputs.map((input) => (input.name))
+    let keys = Object.keys(state).filter(item => vals.includes(item))
+    // let keys = Object.keys(user.billing_address)
     let changed = false
     for (let i=0; i<keys.length; i++) {
-      if (keys[i] === 'complete') continue
-      if (user.billing_address[keys[i]] !== state[keys[i]]) changed = true
+      if (!user.billing_address[keys[i]]) {
+        if (state[keys[i]]) changed = true
+      } else {
+        if (state[keys[i]] !== user.billing_address[keys[i]]) changed = true
+      }
     }
     if (changed !== state.changed) dispatch({ type: 'set', state: { changed: changed } })
   }, [state, dispatch])
@@ -73,45 +81,59 @@ export default function BillingAddressForm(props) {
 
   const saveChanges = () => {
     dispatch({ type: 'set', state: { loading: true } })
-    let updates = {...state}
-    let keys = Object.keys(user.billing_address)
-    let stateKeys = Object.keys(updates)
-    for (let j=0; j<stateKeys.length; j++) {
-      let found = false
-      for (let i=0; i<keys.length; i++) {
-        if (stateKeys[j] === keys[i]) found = true
-      }
-      if (!found) delete updates[stateKeys[j]]
-    }
+    let updates = {}
+    inputs.map(input => {
+      updates[input.name] = state[input.name]
+    })
     updateUser({billing_address: updates}, (errMsg) => {
       dispatch({ type: 'set', state: { error_message: errMsg, loading: false}})
     })
   }
 
+  const handleBlur = (prop) => (e) => dispatch({ type: 'set', state: {focusedElement: null}})
+  const handleFocus = (prop) => (e) => dispatch({ type: 'set', state: {focusedElement: prop}})
+
   return (
     <Box>
-      <Box sx={{maxWidth: '500px'}}>
+      <Box sx={{maxWidth: '500px', display:'flex', flexWrap:'wrap'}}>
         {inputs.map((input, idx) => (
-          <InputBase
+          <InputContainer
             key={idx}
-            disabled={input.disabled}
-            fullWidth={false}
-            sx={{
-              width: input.width,
-              border: '1px solid '+alpha(theme.palette.background.contrast, 0.5),
-              borderRadius: '18px',
-              padding: '0 18px',
-              marginRight: '20px',
-              marginBottom: '20px',
-              '&.Mui-focused': {
-                backgroundColor: alpha(theme.palette.background.contrast, 0.1),
-                borderColor: theme.palette.background.contrast
-              }
-            }}
-            placeholder={input.placeholder}
-            onChange={handleChange(input.name)}
-            value={state[input.name]}
-          />
+            disabled={input.disable}
+            width={input.width}
+            focused={state.focusedElement === input.name}
+            title={input.title}
+          >
+            <InputBase
+              fullWidth={Boolean(input.width)}
+              disabled={input.disabled}
+              value={state[input.name]}
+              onFocus={handleFocus(input.name)}
+              onBlur={handleBlur(input.name)}
+              onChange={handleChange(input.name)}
+              // placeholder={input.placeholder}
+            />
+          </InputContainer>
+          // <InputBase
+          //   key={idx}
+          //   disabled={input.disabled}
+          //   fullWidth={false}
+          //   sx={{
+          //     width: input.width,
+          //     border: '1px solid '+alpha(theme.palette.background.contrast, 0.5),
+          //     borderRadius: '18px',
+          //     padding: '0 18px',
+          //     marginRight: '20px',
+          //     marginBottom: '20px',
+          //     '&.Mui-focused': {
+          //       backgroundColor: alpha(theme.palette.background.contrast, 0.1),
+          //       borderColor: theme.palette.background.contrast
+          //     }
+          //   }}
+          //   placeholder={input.placeholder}
+          //   onChange={handleChange(input.name)}
+          //   value={state[input.name]}
+          // />
         ))}
       </Box>
       <Box>

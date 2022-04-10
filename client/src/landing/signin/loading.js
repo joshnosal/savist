@@ -1,18 +1,15 @@
-import React from 'react'
 import { Box, CircularProgress } from '@mui/material'
 
-export default function LoadingScreen(props){
+export default function LoadingScreen(props) {
 
-  return(
+  return (
     <Box sx={{
-      backgroundColor: 'grey.900',
-      width: '100vw',
-      height: '100vh',
       display: 'flex',
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
+      height: '100vh'
     }}>
-      <CircularProgress size={80} sx={{color: 'primary.main'}}/>
+      <CircularProgress size={64}/>
     </Box>
   )
 }

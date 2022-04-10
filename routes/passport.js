@@ -19,6 +19,15 @@ passport.use('check', new JWTstrategy({
   })
 }))
 
+passport.use('checkAdmin', new JWTstrategy({
+  jwtFromRequest: ExtractJWT.fromAuthHeaderWithScheme('JWT'),
+  secretOrKey: process.env.COOKIE_SECRET
+}, function(token, done){
+  User.findById(token.id, (err, user) => {
+    err ? done(err, false) : user.admin ? done(null, user) : done('not admin', false)
+  })
+}))
+
 passport.use('signup', new localStrategy({
   passReqToCallback: true,
   usernameField: 'email'
@@ -50,7 +59,8 @@ passport.use('signup', new localStrategy({
         email: email,
         individual: {email: email},
         capabilities: {
-          transfers: {requested: true}
+          transfers: {requested: true},
+          card_payments: {requested: true}
         }
       })
         .then(account => done(null, customer, account))
@@ -77,7 +87,6 @@ passport.use('signin', new localStrategy({
   passReqToCallback: true,
   usernameField: 'email'
 }, (req, username, password, done) => {
-  
   User.findOne({email: username.toLowerCase()}).select('+password').exec((err, user) => {
     if (err) return done(null, null, "We're sorry, something went wrong. Please try again.")
     if (!user) return done(null, null, null)

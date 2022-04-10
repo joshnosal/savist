@@ -10,12 +10,15 @@ import BankIcon from '@mui/icons-material/AccountBalanceOutlined'
 import BalanceIcon from '@mui/icons-material/AccountBalanceWalletOutlined'
 import HistoryIcon from '@mui/icons-material/Timeline'
 import LogoutIcon from '@mui/icons-material/Logout'
+import AdminIcon from '@mui/icons-material/AdminPanelSettings'
 import AddCardIcon from '@mui/icons-material/AddCardOutlined'
 
 import DashLanding from './landing'
 import AccountPage from './account'
-import DepositPage from './deposit/index'
-import NewCardPage from './new_card'
+import DepositPage from './deposit'
+import BalancePage from './balance'
+import HistoryPage from './history'
+import AdminAuth from './admin/authorization'
 
 export default function AppRouter(props){
   const theme = useTheme()
@@ -50,13 +53,11 @@ export default function AppRouter(props){
   }
 
   let pages = [
-    // {path: 'deposit', title: 'New Deposit', icon: <BalanceIcon sx={sx.menuIcon}/>},
-    {path: 'new_card', title: 'New Card', icon: <AddCardIcon sx={sx.menuIcon}/>},
     {path: 'my_account', title: 'My Account', icon: <AccountIcon sx={sx.menuIcon}/>},
     {path: 'history', title: 'History', icon: <HistoryIcon sx={sx.menuIcon}/>},
-    {path: 'bank_acounts', title: 'Bank Accounts', icon: <BankIcon sx={sx.menuIcon}/>},
+    {path: 'balance', title: 'Balance', icon: <BalanceIcon sx={sx.menuIcon}/>},
+    {path: 'admin', title: 'Admin', icon: <AdminIcon sx={sx.menuIcon}/> }
   ]
-  const [open, setOpen] = useState(false)
   const [title, setTitle] = useState()
   
   const location = useLocation()
@@ -95,7 +96,7 @@ export default function AppRouter(props){
               marginRight: '20px'
             }}
             onClick={() => {
-              navigate('deposit', { replace: true })
+              navigate('deposit', { replace: true, state: { page: 0} })
               setTitle('New Deposit')
             }}
           >Deposit</Button>
@@ -121,7 +122,7 @@ export default function AppRouter(props){
           display: 'flex',
           flexDirection: 'column',
           flexGrow: 1,
-          padding: '0 20px'
+          padding: '0 20px',
         }}>
           <Box sx={{
             padding: '40px 0'
@@ -135,8 +136,10 @@ export default function AppRouter(props){
           <Routes>
             <Route index element={<DashLanding/>}/>
             <Route path="/my_account" element={<AccountPage/>}/>
-            <Route path="/deposit" element={<DepositPage/>}/>
-            <Route path='/new_card' element={<NewCardPage/>}/>
+            <Route path="/deposit/*" element={<DepositPage/>}/>
+            <Route path='/admin/*' element={<AdminAuth/>}/>
+            <Route path='/balance/*' element={<BalancePage/>}/>
+            <Route path='/history/*' element={<HistoryPage/>}/>
           </Routes>
         </Box>
       </Box>

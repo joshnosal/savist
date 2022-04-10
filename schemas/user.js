@@ -6,21 +6,22 @@ const async = require('async')
 
 const userSchema = new mongoose.Schema({
   email: String,
-  billing_address: { type: Map, default: {
-    first_name: '',
-    last_name: '',
-    address_line1: '',
-    address_line2: '',
-    address_city: '',
-    address_state: '',
-    address_zip: '',
-    address_country: 'US',
-    complete: false
-  }},
+  admin: {type: Boolean, default: false},
+  billing_address: {
+    first_name: String,
+    last_name: String,
+    line1: String,
+    line2: String,
+    city: String,
+    state: String,
+    postal_code: String,
+    country: {type: String, default: 'US'},
+    complete: {type: Boolean, default: false}
+  },
   stripe: {
     customer_id: {type: String, select: false},
     account_id: {type: String, select: false},
-    setup_intent_id: {type: String, select: false},
+    last_payment_date: {type: Date, select: false},
     payment_intent_id: {type: String, select: false},
   },
   password: {type: String, select: false},
@@ -30,14 +31,17 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', function(next){
   // Make email lowercase
   this.email = this.email.toLowerCase()
+  this.billing_address.country = 'US'
+
+  // Reject admin change
+  if (this.isModified('admin')) this.admin = false
 
   // Check if billing address is complete
-  let keys = Object.keys(this.billing_address)
   let complete = true
-  for (let i=0; i<keys.length; i++) {
-    if (keys[i] === 'complete') continue
-    if (!this.billing_address[keys[i]]) complete = false
-  }
+  let keys = [ 'first_name', 'last_name', 'line1', 'city', 'state', 'postal_code', 'country' ]
+  keys.map(key => {
+    if (!this.billing_address[key]) complete = false
+  })
   this.billing_address.complete = complete
 
   // Encrypt password

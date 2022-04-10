@@ -6,7 +6,15 @@ body {
   font-family: 'Dosis', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-weight: 300
+  font-weight: 300;
+  letter-spacing: .1rem
+}
+div {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+div::-webkit-scrollbar {
+  display: none;
 }
 
 code {

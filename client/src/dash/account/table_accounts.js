@@ -5,7 +5,6 @@ import { AppContext } from '../../universal/AppContext'
 import CheckboxChecked from '@mui/icons-material/CheckBoxOutlined'
 import CheckboxEmpty from '@mui/icons-material/CheckBoxOutlineBlankOutlined'
 import TrashIcon from '@mui/icons-material/DeleteOutlineOutlined'
-import CloseIcon from '@mui/icons-material/CancelPresentationOutlined'
 
 const initialState = {
   loading: true,
@@ -33,24 +32,20 @@ const columns = [
 export default function AccountsTable(props) {
   const { userToken, updated, update } = useContext(AppContext)
   const [ state, dispatch ] = useReducer(reducer, initialState)
-  const theme = useTheme()
 
-  const getAccountList = async () => {
+  useEffect(async () => {
     const response = await fetch('/stripe/get_external_accounts', {
       method: 'GET',
       headers: { Authorization: `JWT ${userToken}`}
     })
     if (!response.ok) return dispatch({type: 'set', state: { loading: false, backend: false, errorMessage: 'Server error. Please try back later'}})
     let data = await response.json()
-    console.log(data)
     dispatch({ type: 'set', state: { loading: false, backend: true, accounts: data }})
-  }
+  }, [updated, dispatch])
 
-  useEffect(()=>{
-    // getAccountList()
-  },[updated])
 
   const removeAcct = async (accountID) => {
+    dispatch({ type: 'set', state: {errorMessage: null}})
     const response = await fetch('/stripe/remove_external_account', {
       method: 'POST',
       headers: { Authorization: `JWT ${userToken}`, "Content-Type": 'application/json'},
@@ -69,13 +64,14 @@ export default function AccountsTable(props) {
   }
 
   const setDefault = async (accountID) => {
+    dispatch({ type: 'set', state: {errorMessage: null}})
     const response = await fetch('/stripe/set_default_external_account', {
       method: 'POST',
       headers: { Authorization: `JWT ${userToken}`, "Content-Type": 'application/json'},
       body: JSON.stringify({accountID: accountID})
     })
     if (!response.ok) {
-      dispatch({type: 'set', state: { errorMessage: 'Server error. Please try back later'}})
+      dispatch({type: 'set', state: { errorMessage: 'An unexpected error occured. Please try back later'}})
       update()
       return
     }
@@ -90,53 +86,41 @@ export default function AccountsTable(props) {
   ) : !state.backend ? (
     <Box>Error Occured</Box>
   ) : (
-    <Table size='small'>
-      <TableHead>
-        {state.errorMessage && (
+    <Box sx={{display: 'flex', flexDirection: 'column' }}>
+      {state.errorMessage && (
+        <Box sx={{
+          color: 'error.main',
+          fontSize: '14px',
+          marginBottom: '5px'
+        }}>{state.errorMessage}</Box>
+      )}
+      <Table size='small' sx={{width: '100%'}}>
+        <TableHead>
           <TableRow>
-            <TableCell colSpan={10} sx={{border: 'none'}}>
-              <Box sx={{
-                backgroundColor: alpha(theme.palette.common.white, 0.1),
-                padding: '5px 10px',
-                border: '1px solid ' + theme.palette.error.main,
-                borderRadius: '5px',
-                display: 'flex'
-              }}>
-                <Box>{state.errorMessage}</Box>
-                <Icon 
-                  color='error' 
-                  children={<CloseIcon/>} 
-                  sx={{cursor: 'pointer', '&:hover': {color: 'white'}}}
-                  onClick={() => dispatch({ type: 'set', state: { errorMessage: null } })}
-                />
-              </Box>
-            </TableCell>
+            {columns.map((col, idx) => (
+              <TableCell 
+                key={idx}
+                sx={{
+                  fontWeight: '600',
+                  textAlign: ['default', 'remove'].includes(col.key)  && 'center'
+                  // color: theme.palette.grey[600]
+                }}
+              >{col.title}</TableCell>
+            ))}
           </TableRow>
-        )}
-        <TableRow>
-          {columns.map((col, idx) => (
-            <TableCell 
-              key={idx}
-              sx={{
-                fontWeight: '600',
-                textAlign: ['default', 'remove'].includes(col.key)  && 'center'
-                // color: theme.palette.grey[600]
-              }}
-            >{col.title}</TableCell>
+        </TableHead>
+        <TableBody>
+          {state.accounts.map((acct, idx) => (
+            <CustomRow 
+              key={idx} 
+              account={acct}
+              removeAcct={removeAcct}
+              setDefault={setDefault}
+            />
           ))}
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {state.accounts.map((acct, idx) => (
-          <CustomRow 
-            key={idx} 
-            account={acct}
-            removeAcct={removeAcct}
-            setDefault={setDefault}
-          />
-        ))}
-      </TableBody>
-    </Table>
+        </TableBody>
+      </Table>
+    </Box>
   )
 }
 
